@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>بحث معلومات الطالب</title>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+    
+    body {
+      margin: 0;
+      padding: 0 15px;
+      font-family: 'Cairo', Arial, sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      direction: rtl;
+      color: #fff;
+    }
+
+    .container {
+      background: rgba(255,255,255,0.1);
+      padding: 30px 25px 40px 25px;
+      border-radius: 15px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      font-weight: 700;
+      font-size: 1.2rem;  /* تم تصغير الخط */
+      letter-spacing: 0.03em;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+    }
+
+    /* الصورة تحت العنوان */
+    .header-image {
+      width: 350px;
+      max-width: 200%;
+      height: auto;
+      margin: 10px auto 20px auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    input[type="text"] {
+      width: 340px; /* صار بعرض الزر */
+      padding: 14px 18px;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      box-shadow: inset 0 0 8px rgba(255,255,255,0.4);
+      transition: box-shadow 0.3s ease;
+      color: #222;
+      font-weight: 600;
+    }
+    input[type="text"]:focus {
+      box-shadow: inset 0 0 12px #ffc107;
+      background: #fff;
+    }
+
+    button {
+      margin-top: 18px;
+      width: 240px; /* نفس عرض الحقل */
+      background: #ffc107;
+      color: #222;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border: none;
+      padding: 14px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px #d49e00;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:hover {
+      background: #ffca28;
+      box-shadow: 0 8px 25px #ffca28;
+    }
+
+    .result {
+      margin-top: 28px;
+      background: rgba(255,255,255,0.2);
+      padding: 20px;
+      border-radius: 12px;
+      min-height: 70px;
+      color: #fff;
+      font-size: 1rem;
+      text-align: right;
+      overflow-wrap: break-word;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .result ul {
+      padding-inline-start: 20px;
+      margin: 0;
+    }
+    .result li {
+      margin: 6px 0;
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .developer-credit {
+      margin-top: 30px;
+      font-weight: 900;
+      font-size: 1.1rem;
+      user-select: none;
+      animation: colorShift 7s linear infinite;
+      letter-spacing: 0.05em;
+      text-shadow: 1px 1px 5px rgba(0,0,0,0.5);
+    }
+
+    @keyframes colorShift {
+      0% { color: #ff3c78; }
+      20% { color: #ffb93c; }
+      40% { color: #3cff98; }
+      60% { color: #3cafff; }
+      80% { color: #b93cff; }
+      100% { color: #ff3c78; }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 25px 20px 35px 20px;
+        max-width: 100%;
+      }
+      h2 {
+        font-size: 1rem;
+      }
+      input[type="text"], button {
+        width: 100%; /* العرض كامل للشاشات الصغيرة */
+      }
+      button {
+        font-size: 1rem;
+      }
+      .header-image {
+        width: 100px;
+        margin-bottom: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>ادخل رقم الهوية الجامعية للطالب</h2>
+    <img src="https://www.raed.net/img?id=1358072" alt="هوية جامعية" class="header-image" />
+    <input type="text" id="studentId" placeholder="رقم الهوية الجامعية" autocomplete="off" />
+    <button onclick="searchStudent()">ابحث</button>
+
+    <div class="result" id="result"></div>
+
+    <div class="developer-credit">تم التطوير By مجتبى</div>
+  </div>
+
+  <script>
+    let studentData = [];
+
+    async function loadExcel() {
+      try {
+        const response = await fetch('students.xlsx');
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        studentData = XLSX.utils.sheet_to_json(worksheet);
+        console.log('تم تحميل بيانات الطلاب:', studentData);
+      } catch (error) {
+        console.error('فشل تحميل ملف Excel:', error);
+        document.getElementById('result').innerHTML = '<p style="color:#ff6b6b;">خطأ في تحميل بيانات الطلاب.</p>';
+      }
+    }
+
+    function searchStudent() {
+      const id = document.getElementById('studentId').value.trim();
+      const resultDiv = document.getElementById('result');
+      if (!id) {
+        resultDiv.innerHTML = '<p style="color:#ffc107;">يرجى إدخال رقم الهوية الجامعية</p>';
+        return;
+      }
+      const student = studentData.find(s => String(s['رقم الهوية الجامعية']) === id || String(s['student_id']) === id || String(s['كود الطالب']) === id);
+      if (student) {
+        let html = '<h3>معلومات الطالب:</h3><ul>';
+        for (const key in student) {
+          html += `<li><strong>${key}:</strong> ${student[key]}</li>`;
+        }
+        html += '</ul>';
+        resultDiv.innerHTML = html;
+      } else {
+        resultDiv.innerHTML = '<p style="color:#ff6b6b;">لم يتم العثور على الطالب بهذا الرقم</p>';
+      }
+    }
+
+    loadExcel();
+  </script>
+</body>
+</html>
